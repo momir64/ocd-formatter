@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>rs.moma.ocd-formatter</id>
-    <name>OCD Imports Formatter – Sort Import Lines by Length</name>
+    <name>OCD Imports Formatter - Sort Import Lines by Length</name>
     <vendor email="dev@moma.rs">Momo</vendor>
     <description>Automatically sorts import statements after code formatting,
         ordering them by line length (longest to shortest) and then alphabetically.

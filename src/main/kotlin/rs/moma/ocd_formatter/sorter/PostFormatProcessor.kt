@@ -46,7 +46,8 @@ class PostFormatProcessor : PostFormatProcessor {
         var i = 0
 
         fun flush(block: MutableList<String>) {
-            out += block.sortedWith(compareByDescending<String> { it.length }.thenBy { it })
+            val c = compareByDescending<String> { !it.contains("*") }.thenByDescending { it.length }.thenBy { it }
+            out += block.sortedWith(c)
             block.clear()
         }
 
@@ -58,16 +59,20 @@ class PostFormatProcessor : PostFormatProcessor {
             }
 
             val block = mutableListOf<String>()
+            block += lines[i++]
+
             while (i < lines.size && !isEnd(lines[i].trim())) {
-                if (lines[i].trim().isEmpty()) {
-                    out += lines[i]
+                if (lines[i].isBlank()) {
                     flush(block)
+                    out += lines[i]
                 } else
                     block += lines[i]
                 i++
             }
 
             flush(block)
+            if (i < lines.size)
+                out += lines[i++]
         }
 
         return out.joinToString("\n")
