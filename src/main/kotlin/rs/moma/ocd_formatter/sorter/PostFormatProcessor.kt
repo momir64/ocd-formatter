@@ -46,14 +46,13 @@ class PostFormatProcessor : PostFormatProcessor {
         var i = 0
 
         fun flush(block: MutableList<String>) {
-            val c = compareByDescending<String> { !it.contains("*") }.thenByDescending { it.length }.thenBy { it }
-            out += block.sortedWith(c)
+            val comparator = compareByDescending<String> { it.length }.thenBy { it.replace('*', '~') }
+            out += block.sortedWith(comparator)
             block.clear()
         }
 
         while (i < lines.size) {
-            val t = lines[i].trim()
-            if (!isStart(t)) {
+            if (!isStart(lines[i].trim())) {
                 out += lines[i++]
                 continue
             }
@@ -64,10 +63,9 @@ class PostFormatProcessor : PostFormatProcessor {
             while (i < lines.size && !isEnd(lines[i].trim())) {
                 if (lines[i].isBlank()) {
                     flush(block)
-                    out += lines[i]
+                    out += lines[i++]
                 } else
-                    block += lines[i]
-                i++
+                    block += lines[i++]
             }
 
             flush(block)
