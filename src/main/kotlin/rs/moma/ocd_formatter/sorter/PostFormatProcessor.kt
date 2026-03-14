@@ -13,7 +13,7 @@ class PostFormatProcessor : PostFormatProcessor {
         val document = source.viewProvider.document ?: return range
         val original = document.text
         val sorted = when {
-            source.name.endsWith(".go") -> sortBlocks(original, isStart = { it == "import (" }, isEnd = { it == ")" })
+            source.name.endsWith(".go") -> sortBlocks(original, { it == "import (" }, { it == ")" }, true)
             else -> importPredicate(source.name)?.let { sortBlocks(original, isStart = it) } ?: original
         }
         if (sorted != original) document.setText(sorted)
@@ -39,15 +39,28 @@ class PostFormatProcessor : PostFormatProcessor {
     private fun sortBlocks(
         text: String,
         isStart: (String) -> Boolean,
-        isEnd: (String) -> Boolean = { !isStart(it) && it.isNotEmpty() }
+        isEnd: (String) -> Boolean = { !isStart(it) && it.isNotEmpty() },
+        consumeEnd: Boolean = false
     ): String {
         val out = mutableListOf<String>()
         val lines = text.lines()
         var i = 0
 
-        fun flush(block: MutableList<String>) {
-            val comparator = compareByDescending<String> { it.length }.thenBy { it.replace('*', '~') }
-            out += block.sortedWith(comparator)
+        fun collectLogicalLine(): List<String> {
+            val raw = mutableListOf(lines[i++])
+            var depth = raw[0].count { it == '(' } - raw[0].count { it == ')' }
+            while (i < lines.size && depth > 0) {
+                raw += lines[i]
+                depth += lines[i].count { it == '(' } - lines[i].count { it == ')' }
+                i++
+            }
+            return raw
+        }
+
+        fun flush(block: MutableList<List<String>>) {
+            val comparator = compareByDescending<List<String>> { it.joinToString("").length }
+                .thenBy { it.joinToString("").replace('*', '~') }
+            out += block.sortedWith(comparator).flatten()
             block.clear()
         }
 
@@ -57,20 +70,20 @@ class PostFormatProcessor : PostFormatProcessor {
                 continue
             }
 
-            val block = mutableListOf<String>()
-            block += lines[i++]
+            val block = mutableListOf<List<String>>()
+            if (consumeEnd && i < lines.size) out += lines[i++]
 
             while (i < lines.size && !isEnd(lines[i].trim())) {
                 if (lines[i].isBlank()) {
                     flush(block)
                     out += lines[i++]
-                } else
-                    block += lines[i++]
+                } else {
+                    block += collectLogicalLine()
+                }
             }
 
             flush(block)
-            if (i < lines.size)
-                out += lines[i++]
+            if (consumeEnd && i < lines.size) out += lines[i++]
         }
 
         return out.joinToString("\n")
