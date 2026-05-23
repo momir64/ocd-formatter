@@ -42,24 +42,38 @@ class PostFormatProcessor : PostFormatProcessor {
         isEnd: (String) -> Boolean = { !isStart(it) && it.isNotEmpty() },
         consumeEnd: Boolean = false
     ): String {
+        fun List<String>.removeEndComma() = dropLast(1) + last().trimEnd().removeSuffix(",")
+        fun List<String>.join() = joinToString("", transform = String::trim)
+        fun List<String>.addEndComma() = dropLast(1) + (last().trimEnd() + ",")
+        fun List<String>.endsWithComma() = last().trimEnd().endsWith(",")
+        fun String.replaceStar() = trim().replace('*', '~')
+        fun String.depth() = count { it == '(' } - count { it == ')' }
+
         val out = mutableListOf<String>()
         val lines = text.lines()
         var i = 0
 
         fun collectLogicalLine(): List<String> {
             val raw = mutableListOf(lines[i++])
-            var depth = raw[0].count { it == '(' } - raw[0].count { it == ')' }
+            var depth = raw[0].depth()
             while (i < lines.size && depth > 0) {
                 raw += lines[i]
-                depth += lines[i].count { it == '(' } - lines[i].count { it == ')' }
-                i++
+                depth += lines[i++].depth()
+            }
+            if (raw.size > 2) {
+                var inner: List<String> = raw.subList(1, raw.size - 1).filter { it.isNotBlank() }
+                val lastLineHasComma = inner.endsWithComma()
+                if (!lastLineHasComma) inner = inner.addEndComma()
+                val comparator = compareByDescending<String> { it.trim().length }.thenBy { it.replaceStar() }
+                var sorted = inner.sortedWith(comparator)
+                if (!lastLineHasComma) sorted = sorted.removeEndComma()
+                return listOf(raw[0]) + sorted + listOf(raw.last())
             }
             return raw
         }
 
         fun flush(block: MutableList<List<String>>) {
-            val comparator = compareByDescending<List<String>> { it.joinToString("").length }
-                .thenBy { it.joinToString("").replace('*', '~') }
+            val comparator = compareByDescending<List<String>> { it.join().length }.thenBy { it.join().replaceStar() }
             out += block.sortedWith(comparator).flatten()
             block.clear()
         }
