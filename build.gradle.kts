@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 plugins {
     kotlin("jvm") version "2.3.0"
     id("org.jetbrains.intellij.platform") version "2.10.5"
@@ -17,7 +19,13 @@ repositories {
 dependencies {
     intellijPlatform {
         create("IC", "2023.3")
+        testFramework(TestFrameworkType.Platform)
     }
+    testImplementation("junit:junit:4.13.2")
+}
+
+tasks.test {
+    useJUnit()
 }
 
 kotlin {
