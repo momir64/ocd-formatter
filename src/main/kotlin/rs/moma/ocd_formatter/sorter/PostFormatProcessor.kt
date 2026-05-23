@@ -21,12 +21,16 @@ class PostFormatProcessor : PostFormatProcessor {
     }
 
     private fun importPredicate(name: String): ((String) -> Boolean)? {
-        val ext = name.substringAfterLast('.', "")
-        return when (ext) {
+        return when (name.substringAfterLast('.', "")) {
             "py" -> { s -> s.startsWith("import ") || s.startsWith("from ") }
-            "java", "kt" -> { s -> s.startsWith("import ") }
+            "java", "kt", "swift", "scala", "groovy" -> { s -> s.startsWith("import ") }
             "cs" -> { s -> s.startsWith("using ") }
             "rs" -> { s -> s.startsWith("use ") }
+            "cpp", "c", "h", "hpp" -> { s -> s.startsWith("#include ") }
+            "rb" -> { s -> s.startsWith("require ") || s.startsWith("require_relative ") }
+            "php" -> { s -> s.startsWith("use ") || s.startsWith("require ") || s.startsWith("include ") }
+            "dart" -> { s -> s.startsWith("import ") || s.startsWith("part ") }
+            "lua" -> { s -> s.startsWith("require(") }
             "js", "ts", "jsx", "tsx" -> { s ->
                 s.startsWith("import ") || (s.contains("require(") &&
                         (s.startsWith("const ") || s.startsWith("let ") || s.startsWith("var ")))
