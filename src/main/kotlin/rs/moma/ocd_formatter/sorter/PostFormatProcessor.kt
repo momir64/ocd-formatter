@@ -50,8 +50,12 @@ class PostFormatProcessor : PostFormatProcessor {
         fun List<String>.join() = joinToString("", transform = String::trim)
         fun List<String>.addEndComma() = dropLast(1) + (last().trimEnd() + ",")
         fun List<String>.endsWithComma() = last().trimEnd().endsWith(",")
-        fun String.replaceStar() = trim().replace('*', '~')
         fun String.depth() = count { it == '(' } - count { it == ')' }
+        fun String.starSortKey(): String {
+            val s = trim()
+            val marker = if (s.trimEnd(',', ';').endsWith("*")) "1" else "0"
+            return marker + s.replace('*', '~')
+        }
 
         val out = mutableListOf<String>()
         val lines = text.lines()
@@ -68,7 +72,7 @@ class PostFormatProcessor : PostFormatProcessor {
                 var inner: List<String> = raw.subList(1, raw.size - 1).filter { it.isNotBlank() }
                 val lastLineHasComma = inner.endsWithComma()
                 if (!lastLineHasComma) inner = inner.addEndComma()
-                val comparator = compareByDescending<String> { it.trim().length }.thenBy { it.replaceStar() }
+                val comparator = compareByDescending<String> { it.trim().length }.thenBy { it.starSortKey() }
                 var sorted = inner.sortedWith(comparator)
                 if (!lastLineHasComma) sorted = sorted.removeEndComma()
                 return listOf(raw[0]) + sorted + listOf(raw.last())
@@ -77,7 +81,7 @@ class PostFormatProcessor : PostFormatProcessor {
         }
 
         fun flush(block: MutableList<List<String>>) {
-            val comparator = compareByDescending<List<String>> { it.join().length }.thenBy { it.join().replaceStar() }
+            val comparator = compareByDescending<List<String>> { it.join().length }.thenBy { it.join().starSortKey() }
             out += block.sortedWith(comparator).flatten()
             block.clear()
         }

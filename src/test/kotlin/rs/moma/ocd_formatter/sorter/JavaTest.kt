@@ -22,4 +22,15 @@ class JavaTest : PostFormatProcessorTest() {
         import ab.cd.ef.gh.Z;
         """.trimIndent())
     )
+
+    fun `test wildcard sorts after even with earlier alphabetical difference`() = assertEquals(
+        """
+        import bb.aaaa.Z;
+        import aa.zzzz.*;
+        """.trimIndent(),
+        sort("file.java", """
+        import aa.zzzz.*;
+        import bb.aaaa.Z;
+        """.trimIndent())
+    )
 }

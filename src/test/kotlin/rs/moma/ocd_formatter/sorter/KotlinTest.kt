@@ -54,4 +54,15 @@ class KotlinTest : PostFormatProcessorTest() {
         class Foo
         """.trimIndent())
     )
+
+    fun `test wildcard sorts after even with earlier alphabetical difference`() = assertEquals(
+        """
+        import bb.aaaa.Z
+        import aa.zzzz.*
+        """.trimIndent(),
+        sort("file.kt", """
+        import aa.zzzz.*
+        import bb.aaaa.Z
+        """.trimIndent())
+    )
 }
